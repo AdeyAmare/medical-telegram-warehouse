@@ -137,6 +137,35 @@ dbt debug
 
 ---
 
+## Running dbt End-to-End
+
+1. Ensure PostgreSQL is running and accessible.
+2. Copy `profiles.yml.template` to `~/.dbt/profiles.yml` and set environment variables:
+   - DB_HOST
+   - DB_USER
+   - DB_PASSWORD
+   - DB_NAME
+   - DB_SCHEMA (optional)
+3. Activate your Python environment with dbt installed.
+4. Run dbt commands:
+
+# Install dependencies (if any)
+dbt deps
+
+# Run staging models
+dbt run -m stg_*
+
+# Run marts (fact and dimension tables)
+dbt run -m marts
+
+# Test all models
+dbt test
+
+# Generate documentation
+dbt docs generate
+dbt docs serve
+
+
 ## Notes
 
 * Designed for **incremental updates**; new messages can be appended daily.
