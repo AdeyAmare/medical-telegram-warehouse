@@ -14,4 +14,3 @@ data/raw/*
 !data/raw/.gitkeep
 !data/raw.dvc
 data/raw/.gitignore
-logs
