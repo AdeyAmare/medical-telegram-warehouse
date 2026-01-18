@@ -7,3 +7,4 @@ pytest
 telethon
 dbt-postgres
 psycopg2-binary
+dvc
