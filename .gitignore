@@ -7,3 +7,8 @@ __pycache__/
 *.pyo
 
 .env
+
+*.session
+
+data
+logs
