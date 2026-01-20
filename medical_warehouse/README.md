@@ -32,6 +32,7 @@ medical_warehouse/
 │       ├── dim_channels.sql
 │       ├── dim_dates.sql
 │       ├── fct_messages.sql
+│       ├── fct_image_detections.sql
 │       └── schema.yml          # Metadata & tests for marts
 ├── tests/
 │   ├── assert_no_future_messages.sql
@@ -68,6 +69,14 @@ medical_warehouse/
 
   * Links each message to `dim_channels` and `dim_dates`.
   * Stores engagement metrics (`view_count`, `forward_count`) and media flags.
+
+* **`fct_image_detections.sql`** — Fact table for YOLO-based image detections.
+
+  * Aggregates and enriches images downloaded from Telegram messages.
+  * Links each image to `dim_channels` and `dim_dates`.
+  * Stores `image_category`, confidence scores, and detection counts.
+  * Provides a foundation for visual content analysis, e.g., most frequent object categories and average confidence per category.
+  * Supports downstream reporting for **image usage trends across channels**.
 
 ---
 
@@ -112,14 +121,16 @@ dbt debug
 
 1. Ensure PostgreSQL is running and accessible.
 2. Copy `profiles.yml` to `~/.dbt/profiles.yml` and set environment variables:
-   - DB_HOST
-   - DB_USER
-   - DB_PASSWORD
-   - DB_NAME
-   - DB_SCHEMA (optional)
+
+   * DB_HOST
+   * DB_USER
+   * DB_PASSWORD
+   * DB_NAME
+   * DB_SCHEMA (optional)
 3. Activate your Python environment with dbt installed.
 4. Run dbt commands:
 
+```bash
 # Install dependencies (if any)
 dbt deps
 
@@ -135,11 +146,14 @@ dbt test
 # Generate documentation
 dbt docs generate
 dbt docs serve
+```
 
+---
 
 ## Notes
 
-* The project is **incremental-friendly**; new Telegram messages can be added daily.
+* The project is **incremental-friendly**; new Telegram messages and images can be added daily.
 * All transformations follow **cleaning, casting, and enrichment best practices**.
 * Dimensions (`dim_channels`, `dim_dates`) are reusable for multiple facts or analytics queries.
+* `fct_image_detections` enables **image-based analytics** and can be joined with `fct_messages` for combined insights.
 

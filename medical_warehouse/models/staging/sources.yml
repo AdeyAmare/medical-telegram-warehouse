@@ -4,3 +4,4 @@ sources:
     schema: raw         # <--- This is the real schema in Postgres
     tables:
       - name: telegram_messages # <--- This is the real table name
+      - name: yolo_detections  # <--- Add this line here

@@ -8,3 +8,9 @@ telethon
 dbt-postgres
 psycopg2-binary
 dvc
+ultralytics
+fastapi
+uvicorn
+sqlalchemy
+dagster 
+dagster-webserver
