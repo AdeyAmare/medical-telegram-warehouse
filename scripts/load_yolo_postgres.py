@@ -1,4 +1,5 @@
 import os
+import logging
 import pandas as pd
 from pathlib import Path
 from dotenv import load_dotenv
@@ -6,15 +7,29 @@ import psycopg2
 from psycopg2.extras import execute_values
 from typing import Tuple
 
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# Configure logging
+# --------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# --------------------------------------------------------------------------
 # Load environment variables
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 load_dotenv()
 
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # 1. Database connection setup
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 def get_db_connection() -> Tuple[psycopg2.extensions.connection, psycopg2.extensions.cursor]:
+    """
+    Establish a connection to the PostgreSQL database using environment variables.
+
+    Returns:
+        Tuple[connection, cursor]: psycopg2 connection and cursor objects.
+    """
     try:
         conn = psycopg2.connect(
             dbname=os.getenv("DATABASE_NAME"),
@@ -24,16 +39,25 @@ def get_db_connection() -> Tuple[psycopg2.extensions.connection, psycopg2.extens
             port=os.getenv("DATABASE_PORT")
         )
         cur = conn.cursor()
+        logging.info("✅ Database connection established successfully.")
         return conn, cur
     except Exception as e:
-        print(f"❌ Connection failed: {e}")
+        logging.error(f"❌ Connection failed: {e}")
         exit()
 
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # 2. Ensure schema and table exist
-# -----------------------------------------------------------------------------
-def ensure_schema_and_table(conn, cursor) -> None:
-    """Creates the raw schema and the table for YOLO results."""
+# --------------------------------------------------------------------------
+def ensure_schema_and_table(conn: psycopg2.extensions.connection, 
+                            cursor: psycopg2.extensions.cursor) -> None:
+    """
+    Ensure the 'raw' schema and 'yolo_detections' table exist in the database.
+    If not, they are created.
+
+    Args:
+        conn (connection): psycopg2 database connection
+        cursor (cursor): psycopg2 cursor object
+    """
     cursor.execute("""
     CREATE SCHEMA IF NOT EXISTS raw;
 
@@ -48,31 +72,36 @@ def ensure_schema_and_table(conn, cursor) -> None:
     );
     """)
     conn.commit()
+    logging.info("✅ Schema 'raw' and table 'yolo_detections' verified/created.")
 
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 # 3. Load CSV and insert into database
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 def load_csv_to_db(csv_path: Path, cursor: psycopg2.extensions.cursor) -> None:
-    """Reads the YOLO CSV, cleans types, and performs a bulk insert."""
+    """
+    Read YOLO detection CSV, clean columns, and perform bulk insert into PostgreSQL.
+
+    Args:
+        csv_path (Path): Path to the YOLO CSV file
+        cursor (cursor): psycopg2 cursor object
+    """
     if not csv_path.exists():
-        print(f"❌ CSV file not found at {csv_path}")
+        logging.error(f"❌ CSV file not found at {csv_path}")
         return
 
     # Read CSV
     df = pd.read_csv(csv_path)
     
-    # --- CLEANING STEP ---
-    # 1. Ensure message_id is only digits (removes '.jpg' or other suffixes)
-    # We use regex to extract only the numeric part
+    # ----------------- CLEANING STEP -----------------
+    # 1. Ensure message_id contains only digits
     df['message_id'] = df['message_id'].astype(str).str.extract(r'(\d+)').astype(int)    
-    # 2. Handle NaN (Not a Number) values in confidence_score
+    # 2. Handle NaN in confidence_score
     df['confidence_score'] = df['confidence_score'].fillna(0.0)
-    
     # 3. Handle empty detected_objects
     df['detected_objects'] = df['detected_objects'].fillna('none')
-    # ---------------------
+    # -------------------------------------------------
 
-    # Convert DataFrame to list of tuples
+    # Convert DataFrame to list of tuples for bulk insert
     records = list(df.itertuples(index=False, name=None))
 
     if records:
@@ -85,10 +114,11 @@ def load_csv_to_db(csv_path: Path, cursor: psycopg2.extensions.cursor) -> None:
             """,
             records
         )
-        print(f"✅ Cleaned and loaded {len(records)} records into raw.yolo_detections")
-# -----------------------------------------------------------------------------
+        logging.info(f"✅ Cleaned and loaded {len(records)} records into raw.yolo_detections")
+
+# --------------------------------------------------------------------------
 # Main Execution
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 if __name__ == "__main__":
     conn, cur = get_db_connection()
     ensure_schema_and_table(conn, cur)
@@ -103,4 +133,4 @@ if __name__ == "__main__":
     conn.commit()
     cur.close()
     conn.close()
-    print("🎉 YOLO detection data loaded successfully!")
+    logging.info("🎉 YOLO detection data loaded successfully!")
