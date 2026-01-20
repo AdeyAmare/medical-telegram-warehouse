@@ -2,6 +2,8 @@
 
 This folder contains the core source code for the **Telegram Medical Data Warehouse** project.
 
+---
+
 ## Module: `datalake.py`
 
 `datalake.py` provides utility functions for **storing raw Telegram channel data** and maintaining a simple **data lake structure**.
@@ -45,3 +47,56 @@ These functions are used by the Telegram scraper to:
 * Persist raw messages in a structured, date-partitioned format.
 * Maintain metadata about each day’s scraping run.
 * Organize images and JSON files consistently in the data lake.
+
+---
+
+## Module: `yolo_detect.py`
+
+`yolo_detect.py` provides a pipeline for **AI-based image detection and classification** using the YOLOv8 model.
+
+### Key Functions
+
+1. **YOLO Model Initialization**
+
+   * Loads the `yolov8n.pt` model for efficient object detection on local machines.
+
+2. **`classify_image(detected_objects)`**
+
+   * Categorizes images based on the objects detected:
+
+     * `promotional` — person and product present.
+     * `product_display` — only product detected.
+     * `lifestyle` — only person detected.
+     * `other` — no relevant objects detected.
+
+3. **`run_yolo_pipeline()`**
+
+   * Scans all images in the data lake (`data/raw/images/`) across channel subfolders.
+   * Performs YOLO inference for each image.
+   * Extracts detected objects, maximum confidence, and assigns an image category.
+   * Captures channel name and message ID from folder/file structure.
+   * Saves results to a CSV (`yolo_detections.csv`) in the raw data directory.
+
+### Usage
+
+* This module is used after images are downloaded by the scraper to:
+
+  * Detect objects in Telegram images (products, people, etc.).
+  * Classify images into categories for enrichment (`fct_image_detections` in dbt).
+  * Generate a CSV of all detections, which can be loaded into PostgreSQL for analytics.
+
+### Run the Pipeline
+
+From the `src/` folder (or project root), run:
+
+```bash
+python -m yolo_detect
+```
+
+This will:
+
+* Process all images in `data/raw/images/`.
+* Perform object detection using YOLOv8.
+* Save the results to `data/raw/yolo_detections.csv`.
+
+---
