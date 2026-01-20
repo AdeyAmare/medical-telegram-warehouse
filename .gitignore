@@ -15,4 +15,5 @@ data/raw/*
 !data/raw.dvc
 data/raw/.gitignore
 
-.pt
+# ML model weights
+*.pt
